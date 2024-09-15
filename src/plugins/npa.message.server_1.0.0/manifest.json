@@ -1,0 +1,41 @@
+{
+  "id": "npa.message.server",
+  "name": "A Message engine / server based on NPA",
+  "version": "1.0.0",
+  "plugin": "plugin.js",
+  "requires": [
+  	{"type": "plugin","id": "npa.core","version": "1.0.0"},
+  	{"type": "plugin","id": "npa.logging","version": "1.0.0"},
+  	{"type": "plugin","id": "npa.http","version": "1.0.0"},
+  	{"type": "plugin","id": "npa.couchdb.adapter","version": "1.0.0"}
+  ],
+  "extends": [
+  	{
+  		"point": "npa.log.provider",
+  		"id": "npa.message.server.logger",
+  		"dir": "npa.message.server"
+  	},
+  	{
+  		"point": "npa.core.application",
+  		"id": "npa.message.server.application",
+  		"name": "mq4npa"
+  	},
+  	{
+  		"point": "npa.http.router",
+  		"id": "npa.message.server.router",
+  		"path": "/mq"
+  	},
+  	{
+  		"point": "npa.http.handler",
+  		"id": "npa.message.server.admin.request.handler",
+  		"router": "npa.message.server.router",
+  		"method": "POST",
+  		"schema": "/admin/:actionId",
+  		"handler": "administrativeRequestHandler",
+		"description": "Request handler for administrative tasks such as creating a queue or a topic",
+		"input": {}
+  	}
+  ],
+  "provides": [
+  ]
+}
