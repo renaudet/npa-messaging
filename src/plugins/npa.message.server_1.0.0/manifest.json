@@ -3,6 +3,16 @@
   "name": "A Message engine / server based on NPA",
   "version": "1.0.0",
   "plugin": "plugin.js",
+  "security": {
+  	"key": "$SECURITY_KEY,npa.message.server is very basic",
+  	"token": "0ce9b6b0fa0355ea1575df4ae5a3d788"
+  },
+  "server": {
+  	"queueManager": {
+  		"expirationTimeout": "$MSG_EXPIRATION_TIMEOUT,900",
+  		"maxLength": "$MAX_QUEUE_SIZE,200"
+  	}
+  },
   "requires": [
   	{"type": "plugin","id": "npa.core","version": "1.0.0"},
   	{"type": "plugin","id": "npa.logging","version": "1.0.0"},
@@ -26,6 +36,21 @@
   		"path": "/mq"
   	},
   	{
+  		"point": "npa.couchdb.adapter.datasource",
+  		"id": "npa.message.server.admin.datasource",
+  		"reference": "admindb",
+  		"hostname": "127.0.0.1",
+  		"port": "5984",
+  		"dbname": "admin",
+  		"maxPageSize": 500,
+  		"environment": {
+  			"hostname": "COUCH_DB_HOST",
+	  		"port": "COUCH_DB_PORT",
+	  		"username": "COUCH_DB_USER",
+	  		"password": "COUCH_DB_USER_PASSWD"
+  		}
+  	},
+  	{
   		"point": "npa.http.handler",
   		"id": "npa.message.server.admin.request.handler",
   		"router": "npa.message.server.router",
@@ -34,6 +59,26 @@
   		"handler": "administrativeRequestHandler",
 		"description": "Request handler for administrative tasks such as creating a queue or a topic",
 		"input": {}
+  	},
+  	{
+  		"point": "npa.http.handler",
+  		"id": "npa.message.server.queue.manager.publish.request.handler",
+  		"router": "npa.message.server.router",
+  		"method": "POST",
+  		"schema": "/message/publish",
+  		"handler": "queueManagerPublishRequestHandler",
+		"description": "Request handler for queues and topics (publishing)",
+		"input": {"destination": {"type": "queue/topic","name": "abcd","token": "efgh"},"maxAge": 60,"expire": "AAAA/MM/DD HH:mm:ss","content": {}}
+  	},
+  	{
+  		"point": "npa.http.handler",
+  		"id": "npa.message.server.queue.manager.read.request.handler",
+  		"router": "npa.message.server.router",
+  		"method": "POST",
+  		"schema": "/message/query",
+  		"handler": "queueManagerReadRequestHandler",
+		"description": "Request handler for queues and topics (reading)",
+		"input": {"destination": {"type": "queue/topic","name": "abcd","token": "efgh"},"uuid": "xxx-xxx-xxx-xxx"}
   	}
   ],
   "provides": [
