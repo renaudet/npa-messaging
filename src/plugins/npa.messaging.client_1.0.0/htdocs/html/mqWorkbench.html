@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+	<head>
+		<meta name="description" content="All-Purpose-Application-Framework Message Queue Manager Workbench Page">
+		<meta name="Author" lang="fr" content="Nicolas Renaudet">
+		<meta name="Copyright" content="2024 Nicolas Renaudet - All rights reserved">
+		<meta charset="ISO-8859-1">
+		<meta http-equiv="Content-Type" content="text/html; ISO-8859-1">
+		<meta http-equiv="Pragma" content="no-cache">
+		<meta http-equiv="Content-Style-Type" content="text/css">
+		<meta http-equiv='X-UA-Compatible' content='IE=edge'>
+	    <meta name='viewport' content='width=device-width, initial-scale=1'>
+		<link rel="icon" type="image/png" href="/apaf-branding/img/apaf-logo.png?version=1.0"/>
+		<link href="/css/bootstrap.min.css" rel="stylesheet">
+		<link href="/css/treeViewer.css" rel="stylesheet">
+		<title>All Purpose Application Framework</title>
+	</head>
+	<body>
+		<div id="dataManagerPlaceholder" class="npaUi" data-ref="fragmentManager"></div>
+		<div id="navBar" class="npaUi" data-ref="menu"></div>
+		<div id="card" class="npaUi" data-ref="mqWorkbenchCard">
+			<div>
+				<div id="toolbar" class="npaUi" data-ref="actionToolbar"></div>
+				<div class="row" style="margin-top: 15px;">
+					<div class="col-3">
+						<div id="queueManagersArea" style="background-color: #ffffff;min-height: 100px;max-height: 500px;overflow: auto;border: 1px solid #c3c3c3;border-radius: 0.2rem;box-shadow: 1px 1px 3px #a0a0a0;">&nbsp;</div>
+					</div>
+					<div class="col-9 card-scrollable">
+						<div id="queueTestArea" style="display: none;">
+							<span style="font-size: 1.0rem;font-weight: bold;color: #000000;">Message content:</span><br>
+							<textarea id="content" class="form-control" rows="10" style="font-family: 'Courier New', Courier, monospace;font-size: 1.0rem;"></textarea><br>
+							<div class="btn-group" role="group">
+								<button type="button" id="postMessageButton" class="btn btn-primary">Publish Test Message</button>
+								<button type="button" id="pickupMessageButton" class="btn btn-success" disabled>Pickup Message from queue</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="modalPlaceholder" class="npaUi" data-ref="modalDialog"></div>
+		<div id="notifier" class="npaUi" data-ref="notifier"></div>
+		<div id="monitor" class="npaUi" data-ref="sessionMonitor"></div>
+		<script src="/js/jquery-3.6.3.min.js"></script>
+		<script src="/js/bootstrap.bundle.min.js"></script>
+		<script src="/js/treeViewer.js"></script>
+		<script src="/uiTools/js/npaUiCore.js"></script>
+		<script src="/resources/js/utils/apafUtils.js"></script>
+		<script src="/messageClient/js/mqWorkbench.js"></script>
+	</body>
+</html>

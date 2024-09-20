@@ -1,0 +1,186 @@
+{
+	"components": {
+		"menu": {
+		    "id":"apafGeneralNavBar",
+		    "version": "1.0.0",
+		    "type": "NavBar",
+		    "configuration": {
+		        "icon": "/apaf-branding/img/apaf-logo.png",
+		        "stylesheet": "/apaf-branding/css/navBar.css",
+		        "applicationName": "@apaf.application.title",
+		        "homeRef": "/resources/html/home.html",
+		        "providerUrl": "/apaf-menu/global",
+		        "menus": [
+		        	{
+		        		"id": "helpMenu",
+		        		"label": "@apaf.menu.help.label",
+		        		"items": [
+		        			{
+		        				"id": "aboutMenu",
+				        		"label": "@apaf.menu.help.about.label",
+				        		"actionId": "redirect",
+				        		"uri": "/resources/html/about.html",
+				        		"icon": "/uiTools/img/silk/help.png"
+		        			},
+		        			{
+		        				"id": "openNewMenu",
+				        		"label": "@apaf.menu.help.window.label",
+				        		"actionId": "redirect",
+				        		"uri": "/resources/html/home.html",
+				        		"newWindow": true,
+				        		"icon": "/uiTools/img/silk/application_form_add.png"
+		        			},
+		        			{
+		        				"type": "placeholder",
+		        				"id": "helpMenuPlaceholder"
+		        			},
+		        			{
+		        				"type": "separator"
+		        			},
+		        			{
+		        				"id": "logoffMenu",
+				        		"label": "@apaf.menu.help.logoff.label",
+				        		"actionId": "redirect",
+		        				"tooltip": "@apaf.menu.help.logoff.tooltip",
+				        		"uri": "/apaf-logout",
+				        		"icon": "/uiTools/img/silk/door_out.png"
+		        			}
+		        		]
+		        	}
+		        ]
+		    }
+		},
+		"mqWorkbenchCard": {
+		    "id":"mqWorkbenchCard",
+		    "version": "1.0.0",
+		    "type": "Card",
+		    "configuration": {
+		        "icon": "/messageClient/img/mq_workbench.png",
+		        "label": "APAF Queue Manager Workbench",
+		        "headerClass": "bg-secondary bg-gradient bg-opacity-10",
+		        "stylesheet": "/apaf-branding/css/apafCard.css"
+		    }
+		},
+		"notifier": {
+		    "id":"notifier",
+		    "version": "1.0.0",
+		    "type": "Notifier",
+		    "configuration": {
+		    }
+		},
+		"fragmentManager": {
+		    "id":"fragmentManager",
+		    "version": "1.0.0",
+		    "type": "DataManager",
+		    "configuration": {
+		    	"query": {
+		    		"type": "local",
+		    		"uri": "/apaf-dev/fragment/query",
+		    		"payload": {"selector": {}},
+		    		"method": "POST",
+		            "adapter": "@.data"
+		    	},
+		    	"create": {
+		    		"type": "local",
+		    		"uri": "/apaf-dev/fragment",
+		    		"method": "POST",
+		    		"payload": "@",
+		            "adapter": "@.data"
+		    	},
+		    	"update": {
+		    		"type": "local",
+		    		"uri": "/apaf-dev/fragment",
+		    		"method": "PUT",
+		    		"payload": "@",
+		            "adapter": "@.data"
+		    	},
+		    	"delete": {
+		    		"type": "local",
+		    		"uri": "/apaf-dev/fragment/@.id",
+		    		"method": "DELETE",
+		    		"payload": "{}",
+		            "adapter": "@.data"
+		    	},
+		    	"findByPrimaryKey": {
+		    		"type": "local",
+		    		"uri": "/apaf-dev/fragment/@.id",
+		    		"method": "GET",
+		    		"payload": "{}",
+		            "adapter": "@.data"
+		    	}
+		    }
+		},
+		"modalDialog": {
+		    "id":"modalDialog",
+		    "version": "1.0.0",
+		    "type": "ModalDialog",
+		    "configuration": {
+		    	"title": "@apaf.simple.dialog.default.title",
+		    	"size": "XXL",
+		    	"buttons": [
+		    		{
+		    			"label": "@apaf.simple.dialog.cancel.label",
+		    			"action": "cancel"
+		    		},
+		    		{
+		    			"label": "@apaf.simple.dialog.close.label",
+		    			"action": "close"
+		    		}
+		    	]
+		    }
+		},
+		"actionToolbar": {
+		    "id":"actionToolbar",
+		    "version": "1.0.0",
+		    "type": "Toolbar",
+		    "configuration": {
+		    	"actions": [
+		    		{
+		                "label": "Connect to Queue Manager",
+		                "actionId": "connect",
+		                "icon": "/uiTools/img/silk/database_connect.png",
+		                "enabled": true
+		            },
+		    		{
+		                "type": "separator"
+		            },
+		    		{
+		                "label": "Add a Message Queue",
+		                "actionId": "addQueue",
+		                "icon": "/uiTools/img/silk/database_add.png",
+		                "enabled": false
+		            },
+		    		{
+		                "label": "Delete the selected Message Queue",
+		                "actionId": "deleteQueue",
+		                "icon": "/uiTools/img/silk/database_delete.png",
+		                "enabled": false
+		            },
+		    		{
+		                "type": "separator"
+		            },
+		    		{
+		                "label": "Add a Topic",
+		                "actionId": "addTopic",
+		                "icon": "/uiTools/img/silk/transmit_add.png",
+		                "enabled": false
+		            },
+		    		{
+		                "label": "Delete the selected Topic",
+		                "actionId": "deleteTopic",
+		                "icon": "/uiTools/img/silk/transmit_delete.png",
+		                "enabled": false
+		            }
+		    	]
+		    }
+		},
+		"sessionMonitor": { 
+			"id":"sessionMonitor",
+		    "version": "1.0.0",
+		    "type": "apaf.SessionMonitor",
+		    "configuration": {
+		    	"monitoringInterval": 30
+		    }
+		}
+	}
+}

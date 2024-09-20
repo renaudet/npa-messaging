@@ -9,7 +9,8 @@
   },
   "server": {
   	"queueManager": {
-  		"expirationTimeout": "$MSG_EXPIRATION_TIMEOUT,900",
+  		"checkInterval": "$MANAGER_CHECK_INTERVAL,60",
+  		"defaultExpirationTimeout": "$DEFAULT_MSG_EXPIRATION_TIMEOUT,300",
   		"maxLength": "$MAX_QUEUE_SIZE,200"
   	}
   },
@@ -78,7 +79,7 @@
   		"schema": "/message/query",
   		"handler": "queueManagerReadRequestHandler",
 		"description": "Request handler for queues and topics (reading)",
-		"input": {"destination": {"type": "queue/topic","name": "abcd","token": "efgh"},"uuid": "xxx-xxx-xxx-xxx"}
+		"input": {"destination": {"type": "queue","name": "abcd","token": "efgh"},"uuid": "xxx-xxx-xxx-xxx"}
   	}
   ],
   "provides": [

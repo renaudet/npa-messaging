@@ -202,7 +202,9 @@ class AdministrationServer {
 					res.json({"status": 500,"message": "Internal server error","data": "Unable to query existing Topics"});
 				}else{
 					if(!data || data.length==0){
-						let doc = {"type": "topic","name": topicName,"listeners": []};
+						let crypto = server.plugin.getService(CRYPTOGRAPHIC_SERVICE_NAME);
+						let token = crypto.encrypt(topicName,server.plugin.cryptographicKey);
+						let doc = {"type": "topic","name": topicName,"token": token,"subscribers": []};
 						server.insertInDb(doc,function(err,data){
 							if(err){
 								res.json({"status": 500,"message": "Internal server error","data": "Unable to create the Topic"});
