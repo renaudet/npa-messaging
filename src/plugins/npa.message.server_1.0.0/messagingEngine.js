@@ -9,6 +9,7 @@ const CRYPTOGRAPHIC_SERVICE_NAME = 'cryptography';
 const COUCH_DB_SERVICE_NAME =  'couchdb';
 const ADMIN_DATABASE_REFERENCE = 'admindb';
 const TIMESTAMP_FORMAT = 'YYYY/MM/DD HH:mm:ss';
+const REST_PLUGIN_ID = 'npa.rest';
 
 class InMemoryQueueManager{
 	config = null;
@@ -82,7 +83,8 @@ class InMemoryQueueManager{
 			}
 			if(typeof msg.expire!='undefined'){
 				this.engine.debug('expire: '+msg.expire);
-				if(moment(msg.expire,TIMESTAMP_FORMAT).diff(now)>0){
+				this.engine.debug('delta to now: '+now.diff(moment(msg.expire,TIMESTAMP_FORMAT)));
+				if(now.diff(moment(msg.expire,TIMESTAMP_FORMAT))>=0){
 					markForEviction = true;
 				}
 			}
@@ -145,11 +147,64 @@ class PersistentQueueManager{
 		
 	}
 }
+
+class TopicManager{
+	config = null;
+	engine = null;
+	constructor(config,engine){
+		this.config = config;
+		this.engine = engine;
+	}
+	extractConnectionData(endpointUrl){
+		let ctx = {"host": "localhost","port": 80,"secured": false,"uri": "/"};
+		if(endpointUrl.startsWith('https://')){
+			ctx.secured = true;
+			ctx.acceptCertificate = true;
+			ctx.port = 443;
+		}
+		let hostStartIndex = endpointUrl.indexOf('://')+3;
+		let portDelimiterIndex = endpointUrl.indexOf(':',hostStartIndex); 
+		let hostEndIndex = portDelimiterIndex>0?portDelimiterIndex:endpointUrl.indexOf('/',hostStartIndex);
+		ctx.host = endpointUrl.substring(hostStartIndex,hostEndIndex);
+		if(portDelimiterIndex>0){
+			let portStartIndex = portDelimiterIndex+1;
+			let portEndIndex = endpointUrl.indexOf('/',hostStartIndex);
+			ctx.port = parseInt(endpointUrl.substring(portStartIndex,portEndIndex));
+		}
+		ctx.uri = endpointUrl.substring(endpointUrl.indexOf('/',hostStartIndex));
+		console.log(ctx);
+		return ctx;
+	}
+	async postMessage(from,to,msgCtx){
+		let restService = this.engine.plugin.runtime.getPlugin(REST_PLUGIN_ID);
+		let engine = this.engine;
+		restService.performRestApiCall(msgCtx,function(err,response){
+			if(err){
+				engine.error('TopicManager #'+from+': could not deliver message #'+msgCtx.payload.uuid+' to '+to);
+				engine.error(err);
+			}else{
+				engine.debug('TopicManager #'+from+': successfully delivered message #'+msgCtx.payload.uuid+' to '+to);
+			}
+		});
+	}
+	publish(message){
+		let topicMsg = {"uuid": uuidv4(),"created": moment().format(TIMESTAMP_FORMAT),"content": message.content};
+		for(var i=0;i<this.config.subscribers.length;i++){
+			let subscriber = this.config.subscribers[i];
+			let connectionContext = this.extractConnectionData(subscriber.endpoint);
+			connectionContext.method = 'POST';
+			connectionContext.payload = topicMsg;
+			this.postMessage(this.config.name,subscriber.name,connectionContext);
+		}
+		return {"status": "success","uuid": topicMsg.uuid,"created": topicMsg.created};
+	}
+}
  
 class MessagingEngine {
 	plugin = null;
 	adminServer = null;
 	queueManagers = {};
+	topicManagers = {};
 	maxQueueLength = 1000;
 	checkInterval = 60000;
 	defaultExpirationTimeout = 300;
@@ -212,14 +267,27 @@ class MessagingEngine {
 		}
 		return manager;
 	}
+	getTopicManager(topic){
+		let manager = this.topicManagers[topic.name];
+		if(typeof manager=='undefined'){
+			console.log('creating new TopicManager #'+topic.name);
+			manager = new TopicManager(topic,this);
+			this.topicManagers[topic.name] = manager;
+		}
+		return manager;
+	}
 	handlePublishingRequest(req,res){
 		this.trace('->handlePublishingRequest()');
 		var message = req.body;
 		if(this.checkMessageStructure(message)){
 			if(this.checkSecurity(message)){
 				if('queue'==message.destination.type){
-					this.trace('<-handlePublishingRequest()');
+					this.trace('<-handlePublishingRequest() - publish to Queue');
 					this.handleQueuePublishingRequest(message,res);
+				}
+				if('topic'==message.destination.type){
+					this.trace('<-handlePublishingRequest() - publish to Topic');
+					this.handleTopicPublishingRequest(message,res);
 				}
 			}else{
 				this.trace('<-handlePublishingRequest()');
@@ -253,6 +321,31 @@ class MessagingEngine {
 				}else{
 					server.trace('<-handleQueuePublishingRequest()');
 					res.json({"status": 406,"message": "Not Acceptable","data": "Unknown queue name"});
+				}
+			}
+		});
+		
+	}
+	handleTopicPublishingRequest(message,res){
+		this.trace('->handleTopicPublishingRequest()');
+		let server = this;
+		this.adminServer.queryDb({"selector": {"$and": [{"type": {"$eq":"topic"}},{"name": {"$eq":message.destination.name}}]}},function(err,data){
+			if(err){
+				server.trace('<-handleQueuePublishingRequest()');
+				res.json({"status": 500,"message": "Internal Server Error","data": "unable to query the catalog"});
+			}else{
+				if(data && data.length==1){
+					let topic = data[0];
+					server.debug('processing message publishing for topic "'+topic.name+'"');
+					server.debug('message: '+JSON.stringify(message));
+					server.debug('topic: '+JSON.stringify(topic));
+					let topicManager = server.getTopicManager(topic);
+					let receipt = topicManager.publish(message);
+					server.trace('<-handleTopicPublishingRequest()');
+					res.json({"status": 200,"message": "Ok","data": receipt});
+				}else{
+					server.trace('<-handleTopicPublishingRequest()');
+					res.json({"status": 406,"message": "Not Acceptable","data": "Unknown topic name"});
 				}
 			}
 		});

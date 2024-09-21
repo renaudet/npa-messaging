@@ -162,6 +162,7 @@ let queueManagerEventListener = {
 		toolbar.setEnabled('addTopic',false);
 		toolbar.setEnabled('deleteTopic',false);
 		$('#queueTestArea').hide();
+		$('#topicRegisterArea').hide();
 		if('queueManager'==selectedItem.type){
 			toolbar.setEnabled('addQueue',true);
 			toolbar.setEnabled('deleteQueue',false);
@@ -192,6 +193,7 @@ let queueManagerEventListener = {
 			currentQueue = null;
 			setStatus('Selected Topic: '+selectedItem.name+' ('+selectedItem.token+')');
 			$('#queueTestArea').show();
+			$('#topicRegisterArea').show();
 			$('#pickupMessageButton').prop('disabled',true);
 		}
 	}
@@ -219,6 +221,7 @@ onComponentLoaded = function(){
 	initTreeViewer();
 	$('#postMessageButton').on('click',postMessage);
 	$('#pickupMessageButton').on('click',pickupMessage);
+	$('#registerSubscriberButton').on('click',registerSubscriber);
 }
 
 initTreeViewer = function(){
@@ -388,6 +391,7 @@ deleteTopic = function(){
 
 postMessage = function(){
 	let messageContent = $('#content').val();
+	let expirationExpr = $('#expiration').val();
 	let type = 'undefined';
 	let name = 'unknown';
 	let token = '';
@@ -401,7 +405,22 @@ postMessage = function(){
 		name = currentTopic.name;
 		token = currentTopic.token;
 	}
-	let payload = Object.assign({"destination": {"type": type,"name": name,"token": token},"maxAge": 120},currentQueueManager.context);
+	let payload = Object.assign({"destination": {"type": type,"name": name,"token": token}},currentQueueManager.context);
+	if(expirationExpr && expirationExpr.length>0){
+		let switchValue =  $('#maxAgeSwitch').prop('checked');
+		if(switchValue){
+			try{
+				payload.maxAge = parseInt(expirationExpr);
+			}catch(pe){
+				flash('Invalid message maximum age - using 120sec. instead!');
+				payload.maxAge = 120;
+			}
+		}else{
+			payload.expire = expirationExpr;
+		}
+	}else{
+		payload.maxAge = 120;
+	}
 	payload.content = messageContent;
 	apaf.call({"method": "POST","uri": "/apaf-mq-client/message","payload": payload})
 	.then(function(data){
@@ -418,6 +437,21 @@ pickupMessage = function(){
 		apaf.call({"method": "POST","uri": "/apaf-mq-client/message/query","payload": payload})
 		.then(function(data){
 			$('#content').val(data.content);
+			showInfo(JSON.stringify(data,null,'\t').replace(/\t/g,'&nbsp;&nbsp;').replace(/\n/g,'<br>'));
+		})
+		.onError(function(msg){
+			showError(msg);
+		});
+	}
+}
+
+registerSubscriber = function(){
+	if(currentTopic!=null){
+		let subscriberId = $('#subscriberId').val();
+		let endpointUrl = $('#endpointUrl').val();
+		let payload = Object.assign({"destination": {"type": "topic","name": currentTopic.name,"token": currentTopic.token},"subscriber": {"name": subscriberId,"endpoint": endpointUrl}},currentQueueManager.context);
+		apaf.call({"method": "POST","uri": "/apaf-mq-client/subscribe","payload": payload})
+		.then(function(data){
 			showInfo(JSON.stringify(data,null,'\t').replace(/\t/g,'&nbsp;&nbsp;').replace(/\n/g,'<br>'));
 		})
 		.onError(function(msg){

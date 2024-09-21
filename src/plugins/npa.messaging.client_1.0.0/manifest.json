@@ -8,7 +8,8 @@
   	{"type": "plugin","id": "npa.logging","version": "1.0.0"},
   	{"type": "plugin","id": "npa.http","version": "1.0.0"},
   	{"type": "plugin","id": "apaf.menu","version": "1.0.0"},
-  	{"type": "plugin","id": "apaf.dev","version": "1.0.0"}
+  	{"type": "plugin","id": "apaf.dev","version": "1.0.0"},
+  	{"type": "plugin","id": "apaf.workflow","version": "1.0.0"}
   ],
   "extends": [
   	{
@@ -105,6 +106,40 @@
   		"securityRole": "coreServices",
 		"description": "Pickup a message from a Queue using the remote Queue Manager",
 		"input": {"host": "abcd","port": 1234,"secured": false,"destination": {"type": "queue","name": "abcd","token": "abcd-efgh"},"uuid": "abcd-efgh-ijkl"}
+  	},
+  	{
+  		"point": "npa.http.handler",
+  		"id": "apaf.messaging.client.subscription.handler",
+  		"router": "apaf.messaging.client.router",
+  		"method": "POST",
+  		"schema": "/subscribe",
+  		"handler": "subscriptionHandler",
+  		"securityRole": "coreServices",
+		"description": "Subscribe to a given Topic on the remote Queue Manager",
+		"input": {"host": "abcd","port": 1234,"secured": false,"destination": {"type": "topic","name": "abcd","token": "abcd-efgh"},"subscriber": {"name": "abcd","endpoint": "http://some-url.com"}}
+  	},
+  	{
+  		"point": "apaf.workflow.node.provider",
+  		"id": "apaf.messaging.client.post.message.node.provider",
+  		"name": "PostMessage",
+  		"resourcePath": "/workflow/postMessageNode.js"
+  	},
+  	{
+  		"point": "npa.http.handler",
+  		"id": "apaf.messaging.client.get.destination.handler",
+  		"router": "apaf.messaging.client.router",
+  		"method": "POST",
+  		"schema": "/getDestination",
+  		"handler": "getDestinationHandler",
+  		"securityRole": "administrator",
+		"description": "Connect to a remote Queue Manager and get an existing destination (queue or topic) given its name",
+		"input": {"host": "abcd","port": 1234,"secured": false,"token": "abcd-efgh","name": "abcd"}
+  	},
+  	{
+  		"point": "apaf.workflow.node.provider",
+  		"id": "apaf.messaging.client.pickup.message.node.provider",
+  		"name": "PickupMessage",
+  		"resourcePath": "/workflow/pickupMessageNode.js"
   	}
   ],
   "provides": [

@@ -27,11 +27,54 @@
 					</div>
 					<div class="col-9 card-scrollable">
 						<div id="queueTestArea" style="display: none;">
-							<span style="font-size: 1.0rem;font-weight: bold;color: #000000;">Message content:</span><br>
-							<textarea id="content" class="form-control" rows="10" style="font-family: 'Courier New', Courier, monospace;font-size: 1.0rem;"></textarea><br>
-							<div class="btn-group" role="group">
-								<button type="button" id="postMessageButton" class="btn btn-primary">Publish Test Message</button>
-								<button type="button" id="pickupMessageButton" class="btn btn-success" disabled>Pickup Message from queue</button>
+							<span style="font-size: 1.1rem;font-weight: bold;color: #3953b3;">Queue Test Facility</span>
+							<div class="row">
+								<div class="col-2 form-row-label">Message content:</div>
+								<div class="col-10">
+							       <textarea id="content" class="form-control" rows="10" style="font-family: 'Courier New', Courier, monospace;font-size: 1.0rem;"></textarea>
+							    </div>
+							</div>
+							<div class="row" style="margin-top: 5px;">
+								<div class="col-2 form-row-label">Expiration:</div>
+								<div class="col-3">
+							       <input id="expiration" type="text" class="form-control" placeholder="YYYY/MM/DD HH:mm:ss">
+							    </div>
+							    <div class="col-7 form-check form-switch">
+							    	<input id="maxAgeSwitch" class="form-check-input" type="checkbox" role="switch" value="true" style="margin-top: 12px;">
+							    	<label class="form-check-label" for="maxAgeSwitch" style="margin-top: 7px;">Maximum Age (msec)</label>
+							    </div>
+							</div>
+							<div class="row" style="margin-top: 5px;">
+								<div class="col-2">&nbsp;</div>
+								<div class="col-10">
+									<div class="btn-group" role="group">
+										<button type="button" id="postMessageButton" class="btn btn-primary">Publish Message</button>
+										<button type="button" id="pickupMessageButton" class="btn btn-success" disabled>Pickup Message</button>
+									</div>
+							    </div>
+							</div>
+						</div>
+						<div id="topicRegisterArea" style="display: none;">
+							<span style="font-size: 1.1rem;font-weight: bold;color: #3953b3;">Topic Subscription</span>
+							<div class="row">
+								<div class="col-2 form-row-label">Subscriber ID:</div>
+								<div class="col-10">
+							       <input id="subscriberId" type="text" class="form-control" placeholder="XYZ">
+							    </div>
+							</div>
+							<div class="row" style="margin-top: 5px;">
+								<div class="col-2 form-row-label">Endpoint URL:</div>
+								<div class="col-10">
+							       <input id="endpointUrl" type="text" class="form-control" placeholder="http://some-domain.name/uri">
+							    </div>
+							</div>
+							<div class="row" style="margin-top: 5px;">
+								<div class="col-2">&nbsp;</div>
+								<div class="col-10">
+									<div class="btn-group" role="group">
+										<button type="button" id="registerSubscriberButton" class="btn btn-primary">Register subscriber</button>
+									</div>
+							    </div>
 							</div>
 						</div>
 					</div>

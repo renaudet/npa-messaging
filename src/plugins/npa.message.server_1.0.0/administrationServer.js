@@ -92,6 +92,14 @@ class AdministrationServer {
 			registeredAction = true;
 			this.deleteTopic(req,res);
 		}
+		if('register'==actionId){
+			registeredAction = true;
+			this.registerSubscriber(req,res);
+		}
+		if('getDestination'==actionId){
+			registeredAction = true;
+			this.getDestination(req,res);
+		}
 		if(!registeredAction){
 			this.info('received invalid request for unknown action "'+actionId+'"');
 			res.json({"status": 400,"message": "Bad Request","data": "Action code not supported!"});
@@ -158,6 +166,27 @@ class AdministrationServer {
 					res.json({"status": 500,"message": "Internal server error","data": "Unable to query existing Message Queues"});
 				}else{
 					res.json({"status": 200,"message": "ok","data": data});
+				}
+			});
+		}else{
+			res.json({"status": 401,"message": "Unauthorized","data": "Invalid security token"});
+		}
+	}
+	getDestination(req,res){
+		this.debug('getDestination()');
+		if(this.checkSecurity(req)){
+			let destinationName = req.body.name;
+			let query = {"selector": {"$and": [{"name": {"$eq": destinationName}},{"$or": [{"type": {"$eq": "queue"}},{"type": {"$eq": "topic"}}]}]}};
+			this.debug('query: '+JSON.stringify(query));
+			this.queryDb(query,function(err,data){
+				if(err){
+					res.json({"status": 500,"message": "Internal server error","data": "Unable to query the administrative database"});
+				}else{
+					if(data && data.length==1){
+						res.json({"status": 200,"message": "ok","data": data[0]});
+					}else{
+						res.json({"status": 404,"message": "Not Found","data": []});
+					}
 				}
 			});
 		}else{
@@ -258,6 +287,51 @@ class AdministrationServer {
 					}
 				}
 			});
+		}else{
+			res.json({"status": 401,"message": "Unauthorized","data": "Invalid security token"});
+		}
+	}
+	registerSubscriber(req,res){
+		this.debug('registerSubscriber()');
+		if(this.checkSecurity(req)){
+			let topicName = req.body.destination.name;
+			let subscriberInfo = req.body.subscriber;
+			if(topicName && typeof subscriberInfo!='undefined'){
+				let server = this;
+				this.queryDb({"selector": {"$and": [{"type": {"$eq": "topic"}},{"name": {"$eq": topicName}}]}},function(err,data){
+					if(err){
+						res.json({"status": 500,"message": "Internal server error","data": "Unable to query existing Topics"});
+					}else{
+						if(data && data.length==1){
+							let topic = data[0];
+							// look for this name in the subscriber list
+							let existingSubscriber = null;
+							for(var i=0;i<topic.subscribers.length;i++){
+								let subscriber = topic.subscribers[i];
+								if(subscriber.name==subscriberInfo.name){
+									existingSubscriber = subscriber;
+								}
+							}
+							if(existingSubscriber!=null){
+								existingSubscriber.endpoint = subscriberInfo.endpoint;
+							}else{
+								topic.subscribers.push(subscriberInfo);
+							}
+							server.updateInDb(topic,function(err,data){
+								if(err){
+									res.json({"status": 500,"message": "Internal server error","data": "Unable to update selected Topic"});
+								}else{
+									res.json({"status": 200,"message": "Ok","data": "Registered"});
+								}
+							});
+						}else{
+							res.json({"status": 404,"message": "Not Found","data": "Unknown Topic name"});
+						}
+					}
+				});
+			}else{
+				res.json({"status": 400,"message": "Bad Request","data": "Invalid registration request structure"});
+			}
 		}else{
 			res.json({"status": 401,"message": "Unauthorized","data": "Invalid security token"});
 		}
