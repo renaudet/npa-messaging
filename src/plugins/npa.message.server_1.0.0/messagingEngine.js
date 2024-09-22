@@ -7,7 +7,6 @@ const moment = require('moment');
  
 const CRYPTOGRAPHIC_SERVICE_NAME = 'cryptography';
 const COUCH_DB_SERVICE_NAME =  'couchdb';
-const ADMIN_DATABASE_REFERENCE = 'admindb';
 const TIMESTAMP_FORMAT = 'YYYY/MM/DD HH:mm:ss';
 const REST_PLUGIN_ID = 'npa.rest';
 
@@ -65,7 +64,7 @@ class InMemoryQueueManager{
 		}
 	}
 	async checkForEviction(){
-		this.engine.trace('QueueManager #'+this.config.name+' ->checkForEviction()');
+		this.engine.trace('InMemoryQueueManager #'+this.config.name+' ->checkForEviction()');
 		let now = moment();
 		this.engine.debug('time: '+now.format(TIMESTAMP_FORMAT));
 		let newQueue = [];
@@ -95,56 +94,137 @@ class InMemoryQueueManager{
 			}
 		}
 		this.queue = newQueue;
-		this.engine.trace('QueueManager #'+this.config.name+' <-checkForEviction()');
+		this.engine.trace('InMemoryQueueManager #'+this.config.name+' <-checkForEviction()');
 	}
 }
 
 class PersistentQueueManager{
 	config = null;
 	engine = null;
-	queue = [];
 	constructor(config,engine){
 		this.config = config;
 		this.engine = engine;
 	}
-	publish(message){
+	publish(message,then){
 		//{"destination": {"type": "queue/topic","name": "abcd","token": "efgh"},"maxAge": 60,"expire": "AAAA/MM/DD HH:mm:ss","content": {}}
-		if(this.queue.length<this.engine.maxQueueLength){
-			let queueMsg = {"uuid": uuidv4(),"created": moment().format(TIMESTAMP_FORMAT),"maxAge": message.maxAge,"expire": message.expire,"content": message.content};
-			this.queue.push(queueMsg);
-			console.log('QueueManager #'+this.config.name+': queue length is '+this.queue.length);
-			return {"status": "success","uuid": queueMsg.uuid,"created": queueMsg.created};
-		}else{
-			return {"status": "failure","reason": "maximum queue length reached"}
-		}
-	}
-	pickup(messageId=null){
-		if(messageId==null){
-			if(this.queue.length>0){
-				let message = this.queue.shift();
-				console.log('QueueManager #'+this.config.name+': queue length is now '+this.queue.length);
-				return message;
+		let queueMsg = {"uuid": uuidv4(),"created": moment().format(TIMESTAMP_FORMAT),"maxAge": message.maxAge,"expire": message.expire,"content": message.content};
+		queueMsg.id = queueMsg.uuid;
+		let datasource = this.engine.adminServer.getDatasource(this.config);
+		let couchService = this.engine.plugin.getService(COUCH_DB_SERVICE_NAME);
+		couchService.createRecord(datasource.reference,queueMsg,function(err,data){
+			if(err){
+				then({"status": "failure","reason": err});
 			}else{
-				return null;
+				then({"status": "success","uuid": queueMsg.uuid,"created": queueMsg.created});
 			}
-		}else{
-			let message = null;
-			let newQueue = [];
-			for(var i=0;i<this.queue.length;i++){
-				let queueMsg = this.queue[i];
-				if(queueMsg.uuid==messageId){
-					message = queueMsg;
+		});
+	}
+	pickup(messageId=null,then){
+		let couchService = this.engine.plugin.getService(COUCH_DB_SERVICE_NAME);
+		let datasource = this.engine.adminServer.getDatasource(this.config);
+		let manager = this;
+		let query = null;
+		if(messageId==null){
+			query = {"fields": ["id","created"]};
+			couchService.query(datasource.reference,query,function(err,data){
+				if(err){
+					console.log(err);
+					then(null);
 				}else{
-					newQueue.push(queueMsg);
+					let orderedMsgLst = manager.engine.plugin.sortOn(data,'created',true);
+					//console.log(orderedMsgLst);
+					if(orderedMsgLst.length>0){
+						couchService.findByPrimaryKey(datasource.reference,orderedMsgLst[0],function(err,message){
+							if(err){
+								console.log(err);
+								then(null);
+							}else{
+								//console.log('returning message #'+message.uuid);
+								couchService.deleteRecord(datasource.reference,orderedMsgLst[0],function(err,status){
+									then(message);
+								});
+							}
+						});
+					}else{
+						console.log('Empty persistent queue');
+						then(null);
+					}
 				}
-			}
-			this.queue = newQueue;
-			console.log('QueueManager #'+this.config.name+': queue length is now '+this.queue.length);
-			return message;
+			});
+		}else{
+			query = {"selector": {"$eq": {"uuid": messageId}}};
+			couchService.query(datasource.reference,query,function(err,data){
+				if(err){
+					console.log(err);
+					then(null);
+				}else{
+					if(data && data.length>0){
+						let message = data[0];
+						//console.log('returning message #'+message.uuid);
+						couchService.deleteRecord(datasource.reference,orderedMsgLst[0],function(err,status){
+							then(message);
+						});
+					}else{
+						console.log('Message #'+messageId+' not found!');
+						then(null);
+					}
+				}
+			});
 		}
 	}
 	checkForEviction(){
-		
+		this.engine.trace('PersistentQueueManager #'+this.config.name+' ->checkForEviction()');
+		let now = moment();
+		this.engine.debug('time: '+now.format(TIMESTAMP_FORMAT));
+		let couchService = this.engine.plugin.getService(COUCH_DB_SERVICE_NAME);
+		let datasource = this.engine.adminServer.getDatasource(this.config);
+		let manager = this;
+		let query = {"selector": {},"fields": ["id","created","maxAge","expire"]};
+		couchService.query(datasource.reference,query,function(err,messages){
+			if(err){
+				manager.engine.debug('Error querying the '+datasource.reference+' datasource');
+				manager.engine.debug(err);
+			}else{
+				let toDelete = [];
+				for(var i=0;i<messages.length;i++){
+					let message = messages[i];
+					manager.engine.debug('message #ID: '+message.uuid);
+					let markForEviction = false;
+					if(typeof message.maxAge!='undefined'){
+						manager.engine.debug('maxAge: '+(message.maxAge*1000));
+						let msgAge = now.diff(moment(message.created,TIMESTAMP_FORMAT));
+						manager.engine.debug('current age: '+msgAge);
+						if(msgAge>(message.maxAge*1000)){
+							markForEviction = true;
+						}
+					}
+					if(typeof message.expire!='undefined'){
+						manager.engine.debug('expire: '+message.expire);
+						manager.engine.debug('delta to now: '+now.diff(moment(message.expire,TIMESTAMP_FORMAT)));
+						if(now.diff(moment(message.expire,TIMESTAMP_FORMAT))>=0){
+							markForEviction = true;
+						}
+					}
+					if(markForEviction){
+						manager.engine.info('Evicting Message ID#'+message.uuid+' due to maxAge or expire rule');
+						toDelete.push(message);
+					}
+				}
+				let deleteMessages = function(msgList,index,then){
+					if(index<msgList.length){
+						let msg = msgList[index];
+						couchService.deleteRecord(datasource.reference,msg,function(err,status){
+							deleteMessages(msgList,index+1,then);
+						});
+					}else{
+						then();
+					}
+				}
+				deleteMessages(toDelete,0,function(){
+					manager.engine.trace('PersistentQueueManager #'+manager.config.name+' <-checkForEviction()');
+				});
+			}
+		});
 	}
 }
 
@@ -215,7 +295,9 @@ class MessagingEngine {
 		this.checkInterval = this.plugin.getConfigValue('server.queueManager.checkInterval',type='integer')*1000;
 		this.defaultExpirationTimeout = this.plugin.getConfigValue('server.queueManager.defaultExpirationTimeout',type='integer');
 		let engine = this;
-		setTimeout(function(){ engine.reaperLoop(); },this.checkInterval);
+		this.loadQueueManagers(function(){
+			setTimeout(function(){ engine.reaperLoop(); },engine.checkInterval);
+		});
 	}
 	info(msg){
 		this.plugin.info(msg);
@@ -228,6 +310,22 @@ class MessagingEngine {
 	}
 	error(msg){
 		this.plugin.error(msg);
+	}
+	loadQueueManagers(then){
+		this.trace('->loadQueueManagers()');
+		let server = this;
+		this.adminServer.queryDb({"selector": {"type": {"$eq":"queue"}}},function(err,queues){
+			if(err){
+				server.error('Unable to preload the Queue Managers');
+				server.error(err);
+				server.trace('<-loadQueueManagers()');
+			}else{
+				for(var i=0;i<queues.length;i++){
+					server.getQueueManager(queues[i]);
+				}
+				then();
+			}
+		});
 	}
 	checkMessageStructure(msg){
 		let valide = true;
@@ -315,9 +413,16 @@ class MessagingEngine {
 					server.debug('message: '+JSON.stringify(message));
 					server.debug('queue: '+JSON.stringify(queue));
 					let queueManager = server.getQueueManager(queue);
-					let receipt = queueManager.publish(message);
-					server.trace('<-handleQueuePublishingRequest()');
-					res.json({"status": 200,"message": "Ok","data": receipt});
+					if(queue.persistent){
+						queueManager.publish(message,function(receipt){
+							server.trace('<-handleQueuePublishingRequest() - from persistent queue');
+							res.json({"status": 200,"message": "Ok","data": receipt});
+						});
+					}else{
+						let receipt = queueManager.publish(message);
+						server.trace('<-handleQueuePublishingRequest() - from in-memory queue');
+						res.json({"status": 200,"message": "Ok","data": receipt});
+					}
 				}else{
 					server.trace('<-handleQueuePublishingRequest()');
 					res.json({"status": 406,"message": "Not Acceptable","data": "Unknown queue name"});
@@ -367,13 +472,25 @@ class MessagingEngine {
 						server.debug('message request: '+JSON.stringify(messageRequest));
 						server.debug('queue: '+JSON.stringify(queue));
 						let queueManager = server.getQueueManager(queue);
-						let message = queueManager.pickup(messageRequest.uuid?messageRequest.uuid:null);
-						if(typeof message!='undefined' && message!=null){
-							server.trace('<-handleReadingRequest()');
-							res.json({"status": 200,"message": "Ok","data": message});
+						if(queueManager.config.persistent){
+							queueManager.pickup(messageRequest.uuid?messageRequest.uuid:null,function(message){
+								if(typeof message!='undefined' && message!=null){
+									server.trace('<-handleReadingRequest()');
+									res.json({"status": 200,"message": "Ok","data": message});
+								}else{
+									server.trace('<-handleReadingRequest()');
+									res.json({"status": 404,"message": "Not Found","data": "No message found"});
+								}
+							});
 						}else{
-							server.trace('<-handleReadingRequest()');
-							res.json({"status": 404,"message": "Not Found","data": "No message found"});
+							let message = queueManager.pickup(messageRequest.uuid?messageRequest.uuid:null);
+							if(typeof message!='undefined' && message!=null){
+								server.trace('<-handleReadingRequest()');
+								res.json({"status": 200,"message": "Ok","data": message});
+							}else{
+								server.trace('<-handleReadingRequest()');
+								res.json({"status": 404,"message": "Not Found","data": "No message found"});
+							}
 						}
 					}else{
 						server.trace('<-handleReadingRequest()');

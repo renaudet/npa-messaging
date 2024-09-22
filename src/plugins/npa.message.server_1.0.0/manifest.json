@@ -11,7 +11,14 @@
   	"queueManager": {
   		"checkInterval": "$MANAGER_CHECK_INTERVAL,60",
   		"defaultExpirationTimeout": "$DEFAULT_MSG_EXPIRATION_TIMEOUT,300",
-  		"maxLength": "$MAX_QUEUE_SIZE,200"
+  		"maxLength": "$MAX_QUEUE_SIZE,200",
+  		"datasource": {
+  			"hostname": "$PERSISTENCE_DB_HOST,localhost",
+  			"port": "$PERSISTENCE_DB_PORT,5984",
+  			"username": "$PERSISTENCE_DB_USER,",
+  			"password": "$PERSISTENCE_DB_USER_PASSWD,",
+  			"maxPageSize": 500
+  		}
   	}
   },
   "requires": [

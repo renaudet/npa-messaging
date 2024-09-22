@@ -126,6 +126,59 @@ class AdministrationServer {
 			res.json({"status": 400,"message": "Bad request","data": "Request body should contain a passPhrase attribute"});
 		}
 	}
+	getDatasource(queue){
+		let baseDatasourceConfig = {
+			"hostname": this.plugin.getConfigValue('server.queueManager.datasource.hostname',type='string'),
+			"port": this.plugin.getConfigValue('server.queueManager.datasource.port',type='integer'),
+			"username": this.plugin.getConfigValue('server.queueManager.datasource.username',type='string'),
+			"password": this.plugin.getConfigValue('server.queueManager.datasource.password',type='string'),
+			"maxPageSize": this.plugin.getConfigValue('server.queueManager.datasource.maxPageSize',type='integer')
+		};
+		if(baseDatasourceConfig.username && baseDatasourceConfig.username.length==0){
+			delete baseDatasourceConfig.username;
+			delete baseDatasourceConfig.password;
+		}
+		baseDatasourceConfig.dbname = 'queue_'+queue.name.toLowerCase();
+		baseDatasourceConfig.reference = queue.name;
+		let couchService = this.plugin.getService(COUCH_DB_SERVICE_NAME);
+		let datasource = null;
+		try{
+			datasource = couchService.getDatasource(queue.name);
+		}catch(exception){
+			couchService.registerDatasource(baseDatasourceConfig);
+			datasource = baseDatasourceConfig;
+		}finally{
+			return datasource;
+		}
+	}
+	createPersistenceDb(queue,then){
+		this.debug('->createPersistenceDb()');
+		let datasource = this.getDatasource(queue);
+		this.debug('datasource: '+JSON.stringify(datasource,null,'\t'));
+		let couchService = this.plugin.getService(COUCH_DB_SERVICE_NAME);
+		let server = this;
+		couchService.checkDatabase(datasource.reference,function(err,databaseAlreadyExists){
+			if(err){
+				server.debug('<-createPersistenceDb() - error checkDatabase');
+				then(err,false);
+			}else{
+				if(!databaseAlreadyExists){
+					couchService.createDatabase(datasource.reference,function(err,db_created){
+						if(err){
+							server.debug('<-createPersistenceDb() - error createDatabase');
+							then(err,db_created);
+						}else{
+							server.debug('<-createPersistenceDb() - success createDatabase');
+							then(null,datasource.reference);
+						}
+					});
+				}else{
+					server.debug('<-createPersistenceDb() - success database already exists');
+					then(null,datasource.reference);
+				}
+			}
+		});
+	}
 	createMessageQueue(req,res){
 		this.debug('createMessageQueue()');
 		if(this.checkSecurity(req)){
@@ -146,7 +199,17 @@ class AdministrationServer {
 							if(err){
 								res.json({"status": 500,"message": "Internal server error","data": "Unable to create the Message Queue"});
 							}else{
-								res.json({"status": 200,"message": "ok","data": data});
+								if(doc.persistent){
+									server.createPersistenceDb(doc,function(err,db_data){
+										if(err){
+											res.json({"status": 500,"message": "Internal server error","data": "Unable to create the persistence database"});
+										}else{
+											res.json({"status": 200,"message": "ok","data": data,"db_data": db_data});
+										}
+									})
+								}else{
+									res.json({"status": 200,"message": "ok","data": data});
+								}
 							}
 						});
 					}else{
