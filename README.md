@@ -65,31 +65,31 @@ __uri:__ /mq/admin/:*actionId*
 
 | __actionId:__ | generateToken |
 | --- | --- |
-| __input:__ | {"passPhrase": "<some pass-phrase with at least 8 characters>} |
-| __output:__ | {"status": 200,"message": "ok","data": <encryptedToken>} |
+| __input:__ | {"passPhrase": "some pass-phrase with at least 8 characters"} |
+| __output:__ | {"status": 200,"message": "ok","data": "encryptedToken"} |
 | __documentation:__ | use this API to generate your own security token and copy the generated value in the npa.messaging.server manifest.json file (/security/token) |
 
 
 
 | __actionId:__ | createQueue |
 | --- | --- |
-| __input:__ | {"token": "<the message server pass-Phrase>,"name": <the new Queue name>,"persistent": true/false} |
-| __output:__ | {"status": 200,"message": "ok","data": <the couchDB record for the new Queue>,"db_data": "<datasource-reference>"} |
+| __input:__ | {"token": "the message server pass-Phrase","name": "the new Queue name","persistent": true/false} |
+| __output:__ | {"status": 200,"message": "ok","data": "the couchDB record for the new Queue","db_data": "datasource-reference"} |
 | __documentation:__ | use this API to create a new Queue with the given name. Persistent queues keep freshly posted, not yet read message after a server restart |
 
 
 
 | __actionId:__ | getQueues |
 | --- | --- |
-| __input:__ | {"token": "<the message server pass-Phrase>} |
-| __output:__ | {"status": 200,"message": "ok","data": <the list of configured Queues on this Message server>} |
+| __input:__ | {"token": "the message server pass-Phrase"} |
+| __output:__ | {"status": 200,"message": "ok","data": "the list of configured Queues on this Message server"} |
 | __documentation:__ | use this API to get the current list of configured Message Queues objects on this Message server |
 
 
 
 | __actionId:__ | deleteQueue |
 | --- | --- |
-| __input:__ | {"token": "<the message server pass-Phrase>,"name": "<the name of the Message Queue to delete>"} |
+| __input:__ | {"token": "the message server pass-Phrase","name": "the name of the Message Queue to delete"} |
 | __output:__ | {"status": 200,"message": "ok","data": "deleted"} |
 | __documentation:__ | use this API to remove a configured Queue Manager given its name |
 
@@ -97,23 +97,23 @@ __uri:__ /mq/admin/:*actionId*
 
 | __actionId:__ | createTopic |
 | --- | --- |
-| __input:__ | {"token": "<the message server pass-Phrase>,"name": <the new Queue name>} |
-| __output:__ | {"status": 200,"message": "ok","data": <the couchDB record for the new Topic>} |
+| __input:__ | {"token": "the message server pass-Phrase","name": <the new Queue name"} |
+| __output:__ | {"status": 200,"message": "ok","data": <the couchDB record for the new Topic"} |
 | __documentation:__ | use this API to create a new Topic with the given name. |
 
 
 
 | __actionId:__ | getTopics
 | --- | --- |
-| __input:__ | {"token": "<the message server pass-Phrase>} |
-| __output:__ | {"status": 200,"message": "ok","data": <the list of configured Topics on this Message server>} |
+| __input:__ | {"token": "the message server pass-Phrase"} |
+| __output:__ | {"status": 200,"message": "ok","data": <the list of configured Topics on this Message server"} |
 | __documentation:__ | use this API to get the current list of configured Message Topic objects on this Message server |
 
 
 
 | __actionId:__ | deleteTopic
 | --- | --- |
-| __input:__ | {"token": "<the message server pass-Phrase>,"name": "<the name of the Message Topic to delete>"} |
+| __input:__ | {"token": "the message server pass-Phrase","name": "the name of the Message Topic to delete"} |
 | __output:__ | {"status": 200,"message": "ok","data": "deleted"} |
 | __documentation:__ | use this API to remove a configured Topic Manager given its name |
 
@@ -121,6 +121,6 @@ __uri:__ /mq/admin/:*actionId*
 
 | __actionId:__ | register |
 | --- | --- |
-| __input:__ | {"token": "<the message server pass-Phrase>,"destination": {"name": "<the name of the Message Topic to register to>"},"subscriber": {"name": "<a name for this subscriber>","endpoint": "<an endpoint URL to send the message to>"}} |
+| __input:__ | {"token": "the message server pass-Phrase","destination": {"name": "the name of the Message Topic to register to"},"subscriber": {"name": "a name for this subscriber","endpoint": "an endpoint URL to send the message to"}} |
 | __output:__ | {"status": 200,"message": "ok","data": "Registered"} |
 | __documentation:__ | use this API to register a new subscriber to a gien Topic |
