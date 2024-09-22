@@ -64,22 +64,16 @@ __uri:__ /mq/admin/:*actionId*
 ##### actions
 
 | __action:__ | generateToken |
-| --- | --- |
 | __input:__ | {"passPhrase": "<some pass-phrase with at least 8 characters>} |
-| --- | --- |
 | __output:__ | {"status": 200,"message": "ok","data": <encryptedToken>} |
-| --- | --- |
 | __documentation:__ | use this API to generate your own security token and copy the generated value in the npa.messaging.server manifest.json file (/security/token) |
 
 
 
-__action:__ createQueue
-
-__input:__ {"token": "<the message server pass-Phrase>,"name": <the new Queue name>,"persistent": true/false}
-
-__output:__ {"status": 200,"message": "ok","data": <the couchDB record for the new Queue>,"db_data": "<datasource-reference>"}
-
-__documentation:__ use this API to create a new Queue with the given name. Persistent queues keep freshly posted, not yet read message after a server restart
+| __action:__ | createQueue |
+| __input:__ | {"token": "<the message server pass-Phrase>,"name": <the new Queue name>,"persistent": true/false} |
+| __output:__ | {"status": 200,"message": "ok","data": <the couchDB record for the new Queue>,"db_data": "<datasource-reference>"} |
+| __documentation:__ | use this API to create a new Queue with the given name. Persistent queues keep freshly posted, not yet read message after a server restart |
 
 
 
