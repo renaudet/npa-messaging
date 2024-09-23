@@ -627,4 +627,58 @@ plugin.subscriptionHandler = function(req,res){
 	});
 }
 
+plugin.removeSubscriptionHandler = function(req,res){
+	plugin.debug('->removeSubscriptionHandler()');
+	res.set('Content-Type','application/json');
+	let requiredRole = plugin.getRequiredSecurityRole('apaf.messaging.client.remove.subscription.handler');
+	let securityEngine = plugin.getService(SECURITY_SERVICE_NAME);
+	securityEngine.checkUserAccess(req,requiredRole,function(err,user){
+		if(err){
+			plugin.debug('<-removeSubscriptionHandler() - authentication');
+			res.json({"status": 500,"message": err,"data": []});
+		}else{
+			let queueManagerContext = req.body;
+			let destinationConfig = queueManagerContext.destination;
+			let subscriberInfo = queueManagerContext.subscriber;
+			if(queueManagerContext 
+			   && typeof queueManagerContext.host!='undefined'
+			   && typeof queueManagerContext.port!='undefined'
+			   && typeof queueManagerContext.secured!='undefined'
+			   && typeof queueManagerContext.token!='undefined'
+			   && typeof destinationConfig!='undefined'
+			   && typeof subscriberInfo!='undefined'
+			   && 'topic'==destinationConfig.type){
+				let restPlugin = plugin.runtime.getPlugin(REST_PLUGIN_ID);
+				let payload = {"destination": destinationConfig,"subscriber": subscriberInfo,"token": queueManagerContext.token};
+				let restContext = {
+					"host": queueManagerContext.host,
+					"port": queueManagerContext.port,
+					"secured": queueManagerContext.secured,
+					"uri": "/mq/admin/unregister",
+					"method": "POST",
+					"payload": payload
+				};
+				restPlugin.performRestApiCall(restContext,function(err,response){
+					if(err){
+						plugin.debug('<-removeSubscriptionHandler() - rest invocation failure');
+						res.json({"status": 500,"message": "Remote Queue Manager invocation failed!","data": []});
+					}else{
+						let qmResponse = response.data;
+						if(qmResponse.status==200){
+							plugin.debug('<-removeSubscriptionHandler() - success');
+							res.json({"status": 200,"message": "ok","data": qmResponse.data});
+						}else{
+							plugin.debug('<-removeSubscriptionHandler() - QM failure');
+							res.json({"status": 500,"message": "Remote Queue Manager invocation failed!","data": qmResponse.message});
+						}
+					}
+				});
+			}else{
+				plugin.debug('<-removeSubscriptionHandler() - invalid context');
+				res.json({"status": 400,"message": "Bad Request","data": "invalid request structure"});
+			}
+		}
+	});
+}
+
 module.exports = plugin;

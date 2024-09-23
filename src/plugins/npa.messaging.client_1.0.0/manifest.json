@@ -116,7 +116,18 @@
   		"handler": "subscriptionHandler",
   		"securityRole": "coreServices",
 		"description": "Subscribe to a given Topic on the remote Queue Manager",
-		"input": {"host": "abcd","port": 1234,"secured": false,"destination": {"type": "topic","name": "abcd","token": "abcd-efgh"},"subscriber": {"name": "abcd","endpoint": "http://some-url.com"}}
+		"input": {"host": "abcd","port": 1234,"secured": false,"token": "abcd-efgh","destination": {"type": "topic","name": "abcd"},"subscriber": {"name": "abcd","endpoint": "http://some-url.com"}}
+  	},
+  	{
+  		"point": "npa.http.handler",
+  		"id": "apaf.messaging.client.remove.subscription.handler",
+  		"router": "apaf.messaging.client.router",
+  		"method": "POST",
+  		"schema": "/unsubscribe",
+  		"handler": "removeSubscriptionHandler",
+  		"securityRole": "coreServices",
+		"description": "Unsubscribe from a given Topic on the remote Queue Manager",
+		"input": {"host": "abcd","port": 1234,"secured": false,"token": "abcd-efgh","destination": {"type": "topic","name": "abcd"},"subscriber": {"name": "abcd"}}
   	},
   	{
   		"point": "apaf.workflow.node.provider",

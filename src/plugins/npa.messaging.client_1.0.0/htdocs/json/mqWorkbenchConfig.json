@@ -68,48 +68,6 @@
 		    "configuration": {
 		    }
 		},
-		"fragmentManager": {
-		    "id":"fragmentManager",
-		    "version": "1.0.0",
-		    "type": "DataManager",
-		    "configuration": {
-		    	"query": {
-		    		"type": "local",
-		    		"uri": "/apaf-dev/fragment/query",
-		    		"payload": {"selector": {}},
-		    		"method": "POST",
-		            "adapter": "@.data"
-		    	},
-		    	"create": {
-		    		"type": "local",
-		    		"uri": "/apaf-dev/fragment",
-		    		"method": "POST",
-		    		"payload": "@",
-		            "adapter": "@.data"
-		    	},
-		    	"update": {
-		    		"type": "local",
-		    		"uri": "/apaf-dev/fragment",
-		    		"method": "PUT",
-		    		"payload": "@",
-		            "adapter": "@.data"
-		    	},
-		    	"delete": {
-		    		"type": "local",
-		    		"uri": "/apaf-dev/fragment/@.id",
-		    		"method": "DELETE",
-		    		"payload": "{}",
-		            "adapter": "@.data"
-		    	},
-		    	"findByPrimaryKey": {
-		    		"type": "local",
-		    		"uri": "/apaf-dev/fragment/@.id",
-		    		"method": "GET",
-		    		"payload": "{}",
-		            "adapter": "@.data"
-		    	}
-		    }
-		},
 		"modalDialog": {
 		    "id":"modalDialog",
 		    "version": "1.0.0",
@@ -169,6 +127,15 @@
 		                "label": "Delete the selected Topic",
 		                "actionId": "deleteTopic",
 		                "icon": "/uiTools/img/silk/transmit_delete.png",
+		                "enabled": false
+		            },
+		    		{
+		                "type": "separator"
+		            },
+		    		{
+		                "label": "Delete the selected Subscription",
+		                "actionId": "deleteSubscription",
+		                "icon": "/uiTools/img/silk/computer_delete.png",
 		                "enabled": false
 		            }
 		    	]

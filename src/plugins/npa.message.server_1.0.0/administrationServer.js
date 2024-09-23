@@ -96,6 +96,10 @@ class AdministrationServer {
 			registeredAction = true;
 			this.registerSubscriber(req,res);
 		}
+		if('unregister'==actionId){
+			registeredAction = true;
+			this.unregisterSubscriber(req,res);
+		}
 		if('getDestination'==actionId){
 			registeredAction = true;
 			this.getDestination(req,res);
@@ -301,7 +305,7 @@ class AdministrationServer {
 							if(err){
 								res.json({"status": 500,"message": "Internal server error","data": "Unable to create the Topic"});
 							}else{
-								res.json({"status": 200,"message": "ok","data": data.id});
+								res.json({"status": 200,"message": "ok","data": data});
 							}
 						});
 					}else{
@@ -385,6 +389,46 @@ class AdministrationServer {
 									res.json({"status": 500,"message": "Internal server error","data": "Unable to update selected Topic"});
 								}else{
 									res.json({"status": 200,"message": "Ok","data": "Registered"});
+								}
+							});
+						}else{
+							res.json({"status": 404,"message": "Not Found","data": "Unknown Topic name"});
+						}
+					}
+				});
+			}else{
+				res.json({"status": 400,"message": "Bad Request","data": "Invalid registration request structure"});
+			}
+		}else{
+			res.json({"status": 401,"message": "Unauthorized","data": "Invalid security token"});
+		}
+	}
+	unregisterSubscriber(req,res){
+		this.debug('unregisterSubscriber()');
+		if(this.checkSecurity(req) && typeof req.body.destination!='undefined' && typeof req.body.subscriber!='undefined'){
+			let topicName = req.body.destination.name;
+			let subscriberName = req.body.subscriber.name;
+			if(topicName && subscriberName){
+				let server = this;
+				this.queryDb({"selector": {"$and": [{"type": {"$eq": "topic"}},{"name": {"$eq": topicName}}]}},function(err,data){
+					if(err){
+						res.json({"status": 500,"message": "Internal server error","data": "Unable to query existing Topics"});
+					}else{
+						if(data && data.length==1){
+							let topic = data[0];
+							let newSubscribersList = [];
+							for(var i=0;i<topic.subscribers.length;i++){
+								let subscriber = topic.subscribers[i];
+								if(subscriber.name!=subscriberName){
+									newSubscribersList.push(subscriber);
+								}
+							}
+							topic.subscribers = newSubscribersList;
+							server.updateInDb(topic,function(err,data){
+								if(err){
+									res.json({"status": 500,"message": "Internal server error","data": "Unable to update selected Topic"});
+								}else{
+									res.json({"status": 200,"message": "Ok","data": "Updated"});
 								}
 							});
 						}else{

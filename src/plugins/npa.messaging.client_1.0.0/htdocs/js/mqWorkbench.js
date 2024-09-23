@@ -8,6 +8,7 @@ const ADD_QUEUE_ACTION_ID = 'addQueue';
 const ADD_TOPIC_ACTION_ID = 'addTopic';
 const DELETE_QUEUE_ACTION_ID = 'deleteQueue';
 const DELETE_TOPIC_ACTION_ID = 'deleteTopic';
+const DELETE_SUBSCRIPTION_ACTION_ID = 'deleteSubscription';
 const TOOLBAR_ID = 'actionToolbar';
 const DIALOG_ID = 'modalDialog';
 const CARD_ID = 'mqWorkbenchCard';
@@ -101,6 +102,7 @@ var currentNode = null;
 var currentQueueManager = null;
 var currentTopic = null;
 var currentQueue = null;
+var currentSubscription = null;
 
 let queueManagerVisitor = {
 	getLabel(element){
@@ -149,6 +151,9 @@ let queueManagerDecorator = {
 				return '<img src="/uiTools/img/silk/basket.png">&nbsp;<b>'+label+'</b>';
 			}
 		}
+		if(element.endpoint){
+			return '<img src="/uiTools/img/silk/computer.png">&nbsp;<b>'+label+'</b>';
+		}
 		return label;
 	}
 };
@@ -161,6 +166,7 @@ let queueManagerEventListener = {
 		toolbar.setEnabled('deleteQueue',false);
 		toolbar.setEnabled('addTopic',false);
 		toolbar.setEnabled('deleteTopic',false);
+		toolbar.setEnabled('deleteSubscription',false);
 		$('#queueTestArea').hide();
 		$('#topicRegisterArea').hide();
 		if('queueManager'==selectedItem.type){
@@ -196,6 +202,13 @@ let queueManagerEventListener = {
 			$('#topicRegisterArea').show();
 			$('#pickupMessageButton').prop('disabled',true);
 		}
+		if(selectedItem.endpoint){
+			toolbar.setEnabled('deleteSubscription',true);
+			let parentNode = node.parent;
+			currentTopic = parentNode.data;
+			currentSubscription = selectedItem.name;
+			setStatus('Selected subscrption: '+selectedItem.name+' ('+selectedItem.endpoint+')');
+		}
 	}
 };
 
@@ -209,9 +222,10 @@ initializeUi = function(){
 			npaUi.onComponentLoaded = onComponentLoaded;
 			npaUi.on(CONNECT_ACTION_ID,openConnectionDialog);
 			npaUi.on(ADD_QUEUE_ACTION_ID,openQueueCreationDialog);
-			npaUi.on(ADD_TOPIC_ACTION_ID,addNewTopic);
+			npaUi.on(ADD_TOPIC_ACTION_ID,openTopicCreationDialog);
 			npaUi.on(DELETE_QUEUE_ACTION_ID,deleteQueue);
 			npaUi.on(DELETE_TOPIC_ACTION_ID,deleteTopic);
+			npaUi.on(DELETE_SUBSCRIPTION_ACTION_ID,deleteSubscription);
 			npaUi.render();
 		});
 	});
@@ -222,6 +236,8 @@ onComponentLoaded = function(){
 	$('#postMessageButton').on('click',postMessage);
 	$('#pickupMessageButton').on('click',pickupMessage);
 	$('#registerSubscriberButton').on('click',registerSubscriber);
+	$('#queueManagersArea').height($('#workArea').height()-50);
+	$('#queueManagersArea').css('maxHeight',($('#workArea').height()-50)+'px');
 }
 
 initTreeViewer = function(){
@@ -276,7 +292,25 @@ openQueueCreationDialog = function(){
 		form.setEditMode(true);
 		dialog.open();
 	});
-	
+}
+
+openTopicCreationDialog = function(){
+	let dialog = $apaf(DIALOG_ID);
+	dialog.setTitle('Remote Topic Manager configuration');
+	dialog.onClose(function(){
+		let form = $apaf(TOPIC_CREATION_FORM_ID);
+		let topicConfiguration = form.getData();
+		addNewTopic(topicConfiguration);
+	});
+	let html = '';
+	html += '<div id="topicCreationFormArea"></div>';
+	dialog.setBody(html);
+	npaUi.renderSingleComponent('topicCreationFormArea',TOPIC_CREATION_FORM,function(){
+		let form = npaUi.getComponent(TOPIC_CREATION_FORM_ID);
+		form.setData({"name": "MY_TOPIC_01"});
+		form.setEditMode(true);
+		dialog.open();
+	});
 }
 
 getQueueManagerCatalog = function(connectionContext){
@@ -324,9 +358,9 @@ addNewQueue = function(queueConfiguration){
 	}
 }
 
-addNewTopic = function(){
+addNewTopic = function(topicConfiguration){
 	if(currentQueueManager!=null){
-		let payload = Object.assign({"topic": {"name": "SOME_TOPIC"}},currentQueueManager.context);
+		let payload = Object.assign({"topic": topicConfiguration},currentQueueManager.context);
 		apaf.call({"method": "POST","uri": "/apaf-mq-client/topic","payload": payload})
 		.then(function(response){
 			console.log(response);
@@ -352,15 +386,22 @@ deleteQueue = function(){
 		let payload = Object.assign({"destination": {"type": "queue","name": currentQueue.name}},currentQueueManager.context);
 		apaf.call({"method": "POST","uri": "/apaf-mq-client/delete","payload": payload})
 		.then(function(data){
-			initTreeViewer();
-			getQueueManagerCatalog(currentQueueManager.context);
-			currentQueueManager = null;
-			currentQueue = null;
-			let toolbar = $apaf(TOOLBAR_ID);
-			toolbar.setEnabled('addQueue',false);
-			toolbar.setEnabled('deleteQueue',false);
-			toolbar.setEnabled('addTopic',false);
-			toolbar.setEnabled('deleteTopic',false);
+			if('Deleted!'==data){
+				let parentNode = currentNode.parent;
+				parentNode.removeChild(currentNode);
+				treeViewer.refreshTree();
+				let deletedQueueName = currentQueue.name;
+				currentQueue = null;
+				let toolbar = $apaf(TOOLBAR_ID);
+				toolbar.setEnabled('addQueue',false);
+				toolbar.setEnabled('deleteQueue',false);
+				toolbar.setEnabled('addTopic',false);
+				toolbar.setEnabled('deleteTopic',false);
+				toolbar.setEnabled('deleteSubscription',false);
+				$('#queueTestArea').hide();
+				$('#topicRegisterArea').hide();
+				flash('Message Queue "'+deletedQueueName+'" deleted!');
+			}
 		})
 		.onError(function(msg){
 			showError(msg);
@@ -373,15 +414,21 @@ deleteTopic = function(){
 		let payload = Object.assign({"destination": {"type": "topic","name": currentTopic.name}},currentQueueManager.context);
 		apaf.call({"method": "POST","uri": "/apaf-mq-client/delete","payload": payload})
 		.then(function(data){
-			initTreeViewer();
-			getQueueManagerCatalog(currentQueueManager.context);
-			currentQueueManager = null;
+			console.log(data);
+			let parentNode = currentNode.parent;
+			parentNode.removeChild(currentNode);
+			treeViewer.refreshTree();
+			let deletedTopicName = currentTopic.name;
 			currentTopic = null;
 			let toolbar = $apaf(TOOLBAR_ID);
 			toolbar.setEnabled('addQueue',false);
 			toolbar.setEnabled('deleteQueue',false);
 			toolbar.setEnabled('addTopic',false);
 			toolbar.setEnabled('deleteTopic',false);
+			toolbar.setEnabled('deleteSubscription',false);
+			$('#queueTestArea').hide();
+			$('#topicRegisterArea').hide();
+			flash('Topic "'+deletedTopicName+'" deleted!');
 		})
 		.onError(function(msg){
 			showError(msg);
@@ -449,10 +496,38 @@ registerSubscriber = function(){
 	if(currentTopic!=null){
 		let subscriberId = $('#subscriberId').val();
 		let endpointUrl = $('#endpointUrl').val();
-		let payload = Object.assign({"destination": {"type": "topic","name": currentTopic.name,"token": currentTopic.token},"subscriber": {"name": subscriberId,"endpoint": endpointUrl}},currentQueueManager.context);
+		let subscriber = {"name": subscriberId,"endpoint": endpointUrl};
+		let payload = Object.assign({"destination": {"type": "topic","name": currentTopic.name,"token": currentTopic.token},"subscriber": subscriber},currentQueueManager.context);
 		apaf.call({"method": "POST","uri": "/apaf-mq-client/subscribe","payload": payload})
 		.then(function(data){
-			showInfo(JSON.stringify(data,null,'\t').replace(/\t/g,'&nbsp;&nbsp;').replace(/\n/g,'<br>'));
+			if('Registered'==data){
+				//showInfo(JSON.stringify(data,null,'\t').replace(/\t/g,'&nbsp;&nbsp;').replace(/\n/g,'<br>'));
+				let treeNode = currentNode.tree.createTreeStructure(currentNode.id+'_subscriber_'+Math.floor(Math.random() * 100000),subscriber);
+				currentNode.addChild(treeNode);
+				currentNode.open();
+				treeViewer.refreshTree();
+				flash('Subscription for endpoint "'+subscriberId+'" registered!');
+			}
+		})
+		.onError(function(msg){
+			showError(msg);
+		});
+	}
+}
+
+deleteSubscription = function(){
+	if(currentTopic!=null){
+		let payload = Object.assign({"destination": {"type": "topic","name": currentTopic.name,"token": currentTopic.token},"subscriber": {"name": currentSubscription}},currentQueueManager.context);
+		apaf.call({"method": "POST","uri": "/apaf-mq-client/unsubscribe","payload": payload})
+		.then(function(data){
+			if('Updated'==data){
+				let parentNode = currentNode.parent;
+				parentNode.removeChild(currentNode);
+				treeViewer.refreshTree();
+				let toolbar = $apaf(TOOLBAR_ID);
+				toolbar.setEnabled('deleteSubscription',false);
+				flash('Subscription for endpoint "'+currentSubscription+'" removed!');
+			}
 		})
 		.onError(function(msg){
 			showError(msg);
