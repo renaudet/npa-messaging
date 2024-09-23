@@ -10,16 +10,6 @@ const fs = require('fs');
 
 var plugin = new MessagingPlugin();
 
-plugin.getNodeExtensionSrc = function(nodeExtensionConfig){
-	this.debug('->getNodeExtensionSrc()');
-	this.debug('extension configuration: '+JSON.stringify(nodeExtensionConfig));
-	let resourcePath = this.getLocalDirectory()+nodeExtensionConfig.resourcePath;
-	this.debug('resourcePath: '+resourcePath);
-	var buffer = fs.readFileSync(resourcePath,{});
-	this.debug('<-getNodeExtensionSrc()');
-	return buffer.toString();
-}
-
 /*
  * qmConnectionContext: {
 	 "host": "abcd",
