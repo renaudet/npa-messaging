@@ -267,7 +267,7 @@ openConnectionDialog = function(){
 	html += '<div id="connectionFormArea"></div>';
 	dialog.setBody(html);
 	npaUi.renderSingleComponent('connectionFormArea',QUEUE_MANAGER_CONNECTION_FORM,function(){
-		let form = npaUi.getComponent(CONNECTION_FORM_ID);
+		let form = $apaf(CONNECTION_FORM_ID);
 		form.setData({"host": "localhost","port": 8000,"secured": false,"token": "myToken"});
 		form.setEditMode(true);
 		dialog.open();
@@ -287,7 +287,7 @@ openQueueCreationDialog = function(){
 	html += '<div id="queueCreationFormArea"></div>';
 	dialog.setBody(html);
 	npaUi.renderSingleComponent('queueCreationFormArea',QUEUE_CREATION_FORM,function(){
-		let form = npaUi.getComponent(QUEUE_CREATION_FORM_ID);
+		let form = $apaf(QUEUE_CREATION_FORM_ID);
 		form.setData({"name": "MY_QUEUE_01","persistent": false});
 		form.setEditMode(true);
 		dialog.open();
@@ -306,7 +306,7 @@ openTopicCreationDialog = function(){
 	html += '<div id="topicCreationFormArea"></div>';
 	dialog.setBody(html);
 	npaUi.renderSingleComponent('topicCreationFormArea',TOPIC_CREATION_FORM,function(){
-		let form = npaUi.getComponent(TOPIC_CREATION_FORM_ID);
+		let form = $apaf(TOPIC_CREATION_FORM_ID);
 		form.setData({"name": "MY_TOPIC_01"});
 		form.setEditMode(true);
 		dialog.open();
