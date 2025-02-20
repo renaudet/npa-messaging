@@ -5,7 +5,7 @@
   "plugin": "plugin.js",
   "security": {
   	"key": "$SECURITY_KEY,npa.message.server is very basic",
-  	"token": "0ce9b6b0fa0355ea1575df4ae5a3d788"
+  	"token": "$SECURITY_TOKEN,0ce9b6b0fa0355ea1575df4ae5a3d788"
   },
   "server": {
   	"queueManager": {

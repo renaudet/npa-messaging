@@ -33,8 +33,10 @@ Where messagingEngineConfig.json is a JSON configuration file for APAF that prov
 ```
 The following environment variables may further configure the message server behavior:
 
-    APAF_COUCH_DB_HOST=<127.0.0.1>
-    APAF_COUCH_DB_PORT=<5984>
+    COUCH_DB_HOST=<127.0.0.1>
+    COUCH_DB_PORT=<5984>
+    COUCH_DB_USER=<some-username>
+    COUCH_DB_USER_PASSWD=<some-password>
     COUCH_DATABASE_PREFIX=<mq_>
     ENABLE_SSL=<true>
     HTTP_SESSION_TIMEOUT=<30>
@@ -46,10 +48,11 @@ The following environment variables may further configure the message server beh
     PERSISTENCE_DB_USER_PASSWD=<some-password>
     PORT=<8000>
     SECURITY_KEY=<a-30-characters-passPhrase-for-RSA256>
+    SECURITY_TOKEN=<RSA256-encrypted-token>
     SSL_CERTIFICATE=<C:/apaf-certificate.pem>
     SSL_PRIVATE_KEY=<C:/apaf-private-key.pem>
     
-Notice that the PERSISTENCE_DB database is used for message persistence while the APAF_COUCH_DB database is used for administrative persistence (catalog). Of course, both databases may be the same.
+Notice that the PERSISTENCE_DB database is used for message persistence while the COUCH_DB database is used for administrative persistence (catalog). Of course, both databases may be the same.
 
 ### APIs
 
@@ -67,7 +70,7 @@ __uri:__ /mq/admin/:*actionId*
 | --- | --- |
 | __input:__ | {"passPhrase": "some pass-phrase with at least 8 characters"} |
 | __output:__ | {"status": 200,"message": "ok","data": "encryptedToken"} |
-| __documentation:__ | use this API to generate your own security token and copy the generated value in the npa.messaging.server manifest.json file (/security/token) |
+| __documentation:__ | use this API to generate your own security token and copy the generated value either in the npa.messaging.server manifest.json file (/security/token) or as value for the SECURITY_TOKEN environment variable |
 
 
 
