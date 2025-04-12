@@ -33,14 +33,16 @@ plugin.start = function(){
 			plugin.error(JSON.stringify(err));
 		}else{
 			if(exists){
+				plugin.info('Administrative database found - starting listener');
 				httpServer.startListener();
 			}else{
-				plugin.info('creating Messaging Engine administrative database (catalog)');
+				plugin.info('Creating Messaging Engine administrative database (catalog)');
 				couchService.createDatabase(ADMIN_DATABASE_REFERENCE,function(err,created){
 					if(err){
 						plugin.error('Error creating CouchDB database '+ADMIN_DATABASE_REFERENCE);
 						plugin.error(JSON.stringify(err));
 					}else{
+						plugin.info('Starting listener');
 						httpServer.startListener();
 					}
 				});

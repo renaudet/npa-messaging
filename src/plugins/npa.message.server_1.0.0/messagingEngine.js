@@ -323,6 +323,7 @@ class MessagingEngine {
 				for(var i=0;i<queues.length;i++){
 					server.getQueueManager(queues[i]);
 				}
+				server.trace('<-loadQueueManagers()');
 				then();
 			}
 		});
